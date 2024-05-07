@@ -4,50 +4,52 @@ const bcrypt = require('bcryptjs');
 const client = require('../models/user');
 const email = require('../html/email');
 const otp = require('../models/otp');
+const User = require('../models/user')
 
 
 router.post("/user", async(req, res)=>{
-  console.log(req)
   try {
-      const UserSchema = Joi.object({
-          name : Joi.string().min(3).max(30).required(),
-          email : Joi.string().email({ minDomainSegments: 2, tlds: { allow: ['com', 'net'] } }).required(),
-          mobile : Joi.string().required(),//pattern(new RegExp('^[6-9][0-9]{9}$')).required(),
-          password : Joi.string(),//pattern(new RegExp('^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$')).required(),
-          address : Joi.object({
-            city : Joi.string(),
-            state : Joi.string(),
-            pincode : Joi.number(),
-            line1 : Joi.string(),
-            line2 : Joi.string(),
-          })
-      });
+    const UserSchema = Joi.object({
+        name : Joi.string().required(),
+        email : Joi.string().email().required(),
+        mobile : Joi.string().required(),
+        password : Joi.string().required(),
+        role : Joi.string().valid("participant").default('participant').allow(""),
+    });
 
-      let validData = await UserSchema.validateAsync(req.body);
+    const validData = await UserSchema.validateAsync(req.body);
+    validData.username = await validData.email;
 
-      validData.password = await bcrypt.hash(req.body.password,10);
-      validData.group = 'admin';
+    let checkEmail = await User.findOne({ email : validData.email });
+    if(checkEmail) return res.status(409).send({
+      status : false,
+      message : "Email Already Exists!"
+    }); 
+    // let checkusername = await User.findOne({ user_name : validData.user_name });
+    // if(checkusername) return res.status(409).send({
+    //   status : false,
+    //   message : "Username Already Exists!"
+    // }); 
+    let checkMobile = await User.findOne({mobile : validData.mobile});
+    if(checkMobile) return res.status(409).send({
+      status : false,
+      message : "Mobile Number Already Exists!"
+    });
+    validData.password = await bcrypt.hash(validData.password, 10);
 
-       const ot = `${Math.floor(1000 + Math.random() * 9000)}`;
+    let user = await User.create(validData);
 
-      let user = await client.create(validData);
-
-      let validateOtp = {
-        email : validData.email,
-        otp : ot,
-      }
-
-      await otp.create(validateOtp);
-       email(validData.email,ot);
-
-      return res.status(200).send({
-          status : true,
-          message : "user created Successfully",
-           data : user
-      })
-  } catch (error) {
-      return res.status(400).send(error.message);
-  }
+    return res.status(200).send({
+        status : true,
+        message : "Register Successfully",
+        data : user,
+    })
+} catch (error) {
+    return res.status(400).send({
+        status : false,
+        message : error.message
+    })
+}
 });
 
      router.get('/details',async(req,res)=>{
@@ -204,4 +206,27 @@ return res.status(200).send({
     
   }
 })
+
+router.get('/dropdown/list', async(req,res)=>{
+  try {
+
+      let result = await User.aggregate([   
+          {
+              $sort : { createdAt : -1 }
+          },
+      ]);
+
+      return res.status(200).send({
+          status : true,
+          message : "Data Fetched Successfully",
+          data : result
+      });
+  } catch (error) {
+       return res.status(400).send({
+        status : false,
+        message : error.message
+       });
+  }
+});
+
      module.exports = router;

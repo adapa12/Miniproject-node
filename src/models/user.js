@@ -24,29 +24,6 @@ const empSchema = new mongoose.Schema({
     type:String,
     required:true,
   },
-  address:{
-
-    city:{
-        type : String,
-        required : true
-    },
-    state : {
-        type : String,
-        required : true,
-    },
-    pincode : {
-        type : Number,
-        required : true,
-    },
-    line1 : {
-        type : String,
-        required : true,
-    },
-    line2 : {
-        type : String,
-         required : false,
-    },
-  },
     group : {
         type : String,
         enum : ['admin','consumer'],

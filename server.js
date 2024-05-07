@@ -1,12 +1,10 @@
 const express = require('express');
-const mongoose = require('mongoose')
-mongoose.set("strictQuery", false); 
 const bodyParser=require('body-parser');
-const post = require('../MINIPROJECT/src/routes/user');
-const category = require('../miniproject/src/routes/category') 
-const upload = require('../miniproject/src/routes/upload')
-const product = require('../miniproject/src/routes/product') 
-const slot = require('../miniproject/src/routes/Slot'); 
+const post = require('./src/routes/user');
+const category = require('./src/routes/category') 
+const upload = require('./src/routes/upload')
+const product = require('./src/routes/product') 
+const slot = require('./src/routes/Slot'); 
 
 
 const app = express();

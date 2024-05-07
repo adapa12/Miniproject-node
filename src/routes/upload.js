@@ -30,4 +30,4 @@ const storage = multer.diskStorage({
         }
    
   });
-  module.exports = router;nm
+  module.exports = router

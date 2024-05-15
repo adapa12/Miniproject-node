@@ -16,10 +16,6 @@ const ProductSchema = new mongoose.Schema({
         type : String,
         required : true,
     },
-    slug:{
-        type:String,
-        required: true,
-    },
     price :{
         type : Number,
         required :true 
@@ -38,7 +34,7 @@ const ProductSchema = new mongoose.Schema({
     },
     image:{
         type:String,
-        required :true
+        required :false
     },
     is_deleted : {
         type : Boolean,

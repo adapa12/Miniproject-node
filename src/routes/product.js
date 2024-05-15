@@ -15,13 +15,8 @@ router.post("/create",async(req, res)=>{
             
         });
         var a=req.body.name; 
-        const slugify = a.toLowerCase()
-                            .replace(/[^a-z0-9]+/g, '-')
-                            .replace(/(^-|-$)+/g, '');
 
         let validData = await ProductSchema.validateAsync(req.body);
-        validData.slug=slugify;
-
         let product = await Product.create(validData);
         return res.status(200).send({
             status : true,

@@ -22,6 +22,7 @@
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.9.13",
     "nodemon": "^2.0.20",
+    "razorpay": "^2.9.3",
     "routing": "^0.0.2",
     "timestamps": "^0.1.3"
   }

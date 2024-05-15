@@ -7,7 +7,12 @@ const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const morgan = require('morgan');
 const helmet = require('helmet');
-const user = require('./src/routes/user')
+const user = require('./src/routes/user');
+const cart = require('./src/routes/cart');
+const product = require('./src/routes/product');
+const checkout  = require('./src/routes/checkout');
+const Order = require('./src/routes/order');
+
 
 require('dotenv').config();
 
@@ -27,7 +32,12 @@ mongoose.connect(process.env.DB_URL, {
   console.log(error.message);
 });
 
-app.use('/api/v1/user', user)
+app.use('/api/v1/user', user);
+app.use('/api/v1/product', product);
+app.use('/api/v1/cart', cart);
+app.use('/api/v1/checkout',checkout);
+app.use('/api/v1/order',Order);
+
 
 
 app.listen(port, ()=>{

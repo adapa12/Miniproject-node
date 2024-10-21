@@ -14,7 +14,7 @@ router.post("/user", async(req, res)=>{
         email : Joi.string().email().required(),
         mobile : Joi.string().required(),
         password : Joi.string().required(),
-        role : Joi.string().valid("participant").default('participant').allow(""),
+        role : Joi.string().valid("consumer").default('consumer').allow(""),
     });
 
     const validData = await UserSchema.validateAsync(req.body);
@@ -82,6 +82,59 @@ router.post("/verify", async(req, res)=>{
 }
 });
 
+router.put('/profile/update/:uuid', async (req, res) => {
+  try {
+    // Validation schema using Joi
+    const UpdateSchema = Joi.object({
+      name: Joi.string().required(),
+      email: Joi.string().email().required(),
+      mobile: Joi.number().required(),
+      profile_pic: Joi.string().allow('') // Allows empty string for profile_pic
+    });
+
+    // Validate the request body data
+    const validData = await UpdateSchema.validateAsync(req.body);
+
+    // Check if mobile already exists for a different user
+    const existingUser = await User.findOne({ mobile: validData.mobile, uuid: { $ne: req.params.uuid } });
+    if (existingUser) {
+      return res.status(400).send({
+        status: false,
+        message: 'Mobile number already in use by another user'
+      });
+    }
+
+    // Find the user by uuid and update the document
+    const updatedUser = await User.findOneAndUpdate(
+      { uuid: req.params.uuid }, 
+      validData, 
+      { new: true, runValidators: true } // Return the updated document
+    );
+
+    // If user is not found, return an error
+    if (!updatedUser) {
+      return res.status(404).send({
+        status: false,
+        message: 'User not found or cannot be updated'
+      });
+    }
+
+    // Send success response
+    return res.status(200).send({
+      status: true,
+      message: 'User Updated Successfully',
+      data: updatedUser
+    });
+
+  } catch (error) {
+    // Handle validation and other errors
+    return res.status(400).send({
+      status: false,
+      message: error.message
+    });
+  }
+});
+
 router.put('/update/:name', async(req,res) => {
   try {
     let name = req.params.name;
@@ -110,6 +163,127 @@ router.put('/update/:name', async(req,res) => {
   catch(error) {
     return res.status(400).send(error.message);
 }
+});
+
+router.get("/view/:uuid", async (req, res) => {
+  try {
+    let uuid = req.params.uuid;
+    let result = await User.findOne({ uuid: uuid });
+    if (result) {
+      return res.status(200).send({
+        status: true,
+        data: result
+      });
+    } else {
+      return res.status(404).send({
+        status: false,
+        message: "Not found"
+      });
+    }
+  } catch (error) {
+    res.status(400).send({
+      status: false,
+      message: error.message
+    });
+  }
+});
+
+router.get('/list', async (req, res) => {
+  try {
+    let { page, limit, search, active } = req.query;
+
+    if (page == "" || page == undefined) page = 0;
+    if (limit == "" || limit == undefined) limit = 10;
+
+    let skip = Number(page) * Number(limit);
+
+    let match = {
+      is_deleted: false,
+      group : "consumer"
+    }
+
+    if (active !== "" && active != undefined) {
+      match.is_active = JSON.parse(active);
+  }
+
+    let result = await User.aggregate([
+      {
+        $match: { ...match }
+      },
+      {
+        "$set": {
+          "profile_pic": {
+            $cond: {
+              if: {
+                $ne: ["$profile_pic", ""]
+              },
+              then: {
+                "$concat": [
+                  process.env.IMAGE_URL,
+                  "$profile_pic"
+                ]
+              },
+              else: {
+                "$concat": [
+                  ''
+                ]
+              }
+            }
+          }
+        }
+      },
+      {
+        $match: {
+          $or: [
+            { "first_name": { $regex: `${search}`, $options: 'i' } },
+            { "last_name": { $regex: `${search}`, $options: 'i' } },
+            { "full_name": { $regex: `${search}`, $options: 'i' } },
+            { "email": { $regex: `${search}`, $options: 'i' } },
+            { "mobile": { $regex: `${search}`, $options: 'i' } },
+          ]
+        }
+      },
+      {
+        $sort: { createdAt: -1 }
+      },
+      {
+        $skip: skip
+      },
+      {
+        $limit: Number(limit)
+      }
+    ]);
+
+    let results = await User.aggregate([
+      {
+        $match: { ...match }
+      },
+      {
+        $match: {
+          $or: [
+            { "first_name": { $regex: `${search}`, $options: 'i' } },
+            { "last_name": { $regex: `${search}`, $options: 'i' } },
+            { "full_name": { $regex: `${search}`, $options: 'i' } },
+            { "email": { $regex: `${search}`, $options: 'i' } },
+            { "mobile": { $regex: `${search}`, $options: 'i' } },
+          ]
+        }
+      },
+    ]);
+
+    return res.status(200).send({
+      status: true,
+      message: "Data Fetched Successfully",
+      count: results.length,
+      data: result
+    });
+
+  } catch (error) {
+    return res.status(400).send({
+      status: 'error',
+      message: error.message
+    });
+  }
 });
 
 router.get('/details', async(req,res)=>{
@@ -228,5 +402,32 @@ router.get('/dropdown/list', async(req,res)=>{
        });
   }
 });
+
+router.put('/delete/:uuid', async(req,res)=>{
+
+  try {
+    
+    const user = await User.findOneAndUpdate({uuid : req.params.uuid},{is_deleted : true})
+    if (user){
+
+      return res.status(200).send({
+        status : true,
+        message : "deleted Successfully"
+      })
+    }
+    else{
+      return res.status(200).send({
+        status : false,
+        message : "User Not Found"
+      })
+    }
+
+  } catch (error) {
+    return res.status(400).send({
+      status : false,
+      message : error.message
+    })
+  }
+})
 
      module.exports = router;

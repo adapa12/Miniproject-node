@@ -24,10 +24,18 @@ const empSchema = new mongoose.Schema({
     type:String,
     required:true,
   },
+  profile_pic : {
+    type : String,
+    required : false
+  },
     group : {
         type : String,
         enum : ['admin','consumer'],
-        default : 'admin'
+        default : 'consumer'
+    },
+    is_active : {
+      type : Boolean,
+      default : false
     },
     is_deleted : {
       type : Boolean,
@@ -42,7 +50,7 @@ const empSchema = new mongoose.Schema({
   )
   empSchema.pre("save", function(next){
     if(this.uuid) return next();
-    this.uuid = 'ANV-'+crypto.pseudoRandomBytes(4).toString('hex').toUpperCase();
+    this.uuid = 'US-'+crypto.pseudoRandomBytes(4).toString('hex').toUpperCase();
     next();
 });
 module.exports = mongoose.model('user',empSchema)
